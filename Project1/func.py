@@ -12,6 +12,17 @@ def frankeFunction(x,y):
     term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
     return term1 + term2 + term3 + term4
 
+def designMatrix(x, y, p):
+    n, = x.shape
+    P = int(((p+2)*(p+1))/2)
+    X = np.zeros((n, P))
+    idx = 0
+    for i in range(p + 1):
+        for j in range(p - i + 1):
+            X[:,idx] = x**i*y**j
+            idx += 1
+    return X
+
 
 if __name__ == "__main__":
     fig = plt.figure()
