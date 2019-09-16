@@ -14,17 +14,17 @@ sigma2 = 0.1               #Irreducable error
 x = np.random.uniform(0, 1, (N,2))
 z = frankeFunction(x[:,0], x[:,1]) + np.random.normal(0, sigma2, N)
 
-p = 5
+p = 2
 P = int(((p+2)*(p+1))/2)
 X = designMatrix(x, p)
 b = np.linalg.inv(X.T @ X) @ X.T @ z
 mse = mse(z, X @ b)
 b_var = np.linalg.inv(X.T @ X) * N/(N-P) * mse
 
-t = stats.t(df = N-P).ppf(0.05)
-cinterval =  [[b[i] - b_var[i][i]*t, b[i] + b_var[i][i]*t] for i in range(p)]
+t = stats.t(df = N-P).ppf(0.95)
+cinterval =  [[b[i] - b_var[i][i]*t, b[i] + b_var[i][i]*t] for i in range(P)]
 
-
+print(cinterval)
 
 
 """
