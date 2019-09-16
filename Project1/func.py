@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
-from random import random, seed
-
+import random as rd
 
 def frankeFunction(x,y):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -26,13 +25,13 @@ def designMatrix(x, p):
     return X
 
 
-def mse(y, ypred):
+def mse(y, y_pred):
     n = y.size
-    mse = 1/n * np.sum((y - ypred)**2)
+    mse = 1/n * np.sum((y - y_pred)**2)
     return mse
 
 
-def r2(y, ypred):
+def r2(y, y_pred):
     n = y.size
     y_ave = np.mean(y)
     r2 = 1 - np.sum((y - y_pred)**2)/np.sum((y - y_ave)**2)
@@ -41,14 +40,15 @@ def r2(y, ypred):
 
 def split_data(n, p = 0.25):
     test_n = int(p*n)
-    idx = [range(n)]
+    idx = list(range(n))
+    rd.shuffle(idx)
     test_idx = [idx.pop() for i in range(test_n)]
     train_idx = idx
     return test_idx, train_idx
 
 
 def kfold(n, k = 5):
-    idx = list(range(n))
+    idx = np.array([range(n)])
     np.random.shuffle(idx)
     idx = np.array_split(idx, k)
 
@@ -63,13 +63,7 @@ def kfold(n, k = 5):
 
 if __name__ == "__main__":
 
-    x = np.random.uniform(0,1,(20,2))
 
-    np.random.seed(1)
-    folds = kfold(20)
-
-    print(x[folds(0)[1]])
-    """
     fig = plt.figure()
     ax = fig.gca(projection="3d")
 
@@ -95,4 +89,3 @@ if __name__ == "__main__":
     fig.colorbar(surf, shrink=0.5, aspect=5)
 
     plt.show()
-"""
