@@ -15,13 +15,13 @@ def frankeFunction(x,y):
 
 
 def designMatrix(x, p):
-    n = x.size
+    n = x.shape[0]
     P = int(((p+2)*(p+1))/2)
     X = np.zeros((n, P))
     idx = 0
     for i in range(p + 1):
         for j in range(p - i + 1):
-            X[:,idx] = x[0]**i*x[1]**j
+            X[:,idx] = (x[:,0]**i)*(x[:,1]**j)
             idx += 1
     return X
 
