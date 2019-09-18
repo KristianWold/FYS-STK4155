@@ -48,7 +48,7 @@ def split_data(n, p = 0.25):
 
 
 def kfold(n, k = 5):
-    idx = np.array([range(n)])
+    idx = np.array(list(range(n)))
     np.random.shuffle(idx)
     idx = np.array_split(idx, k)
 

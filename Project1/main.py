@@ -9,13 +9,14 @@ from scipy import stats
 
 #generate data
 np.random.seed(1)
-N = int(1e3)               #Number of data points
+rd.seed(1)
+N = int(1e5)               #Number of data points
 sigma2 = 1               #Irreducable error
 x = np.random.uniform(0, 1, (N,2))
 z = frankeFunction(x[:,0], x[:,1]) + np.random.normal(0, sigma2, N)
 
 
-poly_deg = 5
+poly_deg = 10
 P = int(((poly_deg+2)*(poly_deg+1))/2)
 
 X = designMatrix(x, poly_deg)
@@ -47,10 +48,27 @@ print(f"train mse is {mse_train}")
 print(f"test mse is {mse_test}")
 
 k = 5
-folds = kfolds(N, 5)
+folds = kfold(N, k)
 
-for i in range(k):
-    train_idx, test_idx = folds(i)
+p = 12
+mse_train = np.zeros(p)
+mse_test = np.zeros(p)
+for i in range(p):
+    for j in range(k):
+        train_idx, test_idx = folds(j)
+        X_train = designMatrix(x[train_idx], i)
+        X_test = designMatrix(x[test_idx], i)
+
+        b_train = np.linalg.inv(X_train.T @ X_train) @ X_train.T @ z[train_idx]
+        mse_train[i] += mse(z[train_idx], X_train @ b_train)
+        mse_test[i] += mse(z[test_idx], X_test @ b_train)
+
+    mse_train[i] /= k
+    mse_test[i] /= k
+
+plt.plot(list(range(p)),mse_train)
+plt.plot(list(range(p)),mse_test)
+plt.show()
 
 """
 M = 40
