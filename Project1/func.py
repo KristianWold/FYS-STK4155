@@ -14,7 +14,7 @@ def frankeFunction(x,y):
 
 class LinearModel:
 
-    def designMatrix(x, p, intercept = True):
+    def designMatrix(self, x, p, intercept = True):
         n = x.shape[0]
         P = int(((p+2)*(p+1))/2) - !intercept
         X = np.zeros((n, P))
@@ -31,28 +31,47 @@ class LinearModel:
 
         return X, P
 
-    def ols(x, y, poly_deg):
+    def ols(self, x, y, poly_deg):
+        self.intercept = True
+        self.centering = False
+        self.standardize = False
+
         self.poly_deg = poly_deg
         X, self.params = designMatrix(x, poly_deg)
         self.b = np.linalg.inv(X.T @ X) @ X.T @ y #matrix inversion
 
-    def ridge(x, y, poly_deg, lambda):
-        x = x - np.mean(x, axis = 1)    #centering data
-        X, self.params = designMatrix(x, poly_deg, intercept = False)
+    def ridge(self, x, y, poly_deg, lamb):
+        self.intercept = False
+        self.center_data = True
+        self.standardize_data = True
+
+        self.x_ave = np.mean(x, axis = 1)
+        self.y_ave = np.mean(y)
+        self.x_std = np.std(x, axis = 1)
+
+        x = (x - self.x_ave)/self.standardize
+
+        X, self.params = designMatrix(x, poly_deg, self.intercept)
+
+        self.params += 1
+        b = np.zeros(self.params)
+        b[0] = self.y_center
+        b[1:] = np.linalg.inv(X.T @ X + lamb np.identity(self.params)) \
+                @ X.T @ (y - self.y_ave)
 
 
-
-    def predict(x):
-        X, = designMatrix(x, self.poly_deg)
+    def predict(self, x):
+        if self.center_data 
+        X, = designMatrix(x, self.poly_deg, self.intercept)
         pred = X @ self.b
         return pred
 
-    def mse(x,y):
+    def mse(self, x,y):
         n = y.size
         _mse = 1/n * np.sum((y - self.predict(x))**2)
         return _mse
 
-    def r2(y, y_pred):
+    def r2(self, y, y_pred):
         n = y.size
         y_ave = np.mean(y)
         _r2 = 1 - np.sum((y - self.predict(x))**2)/np.sum((y - y_ave)**2)
