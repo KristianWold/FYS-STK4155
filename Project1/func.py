@@ -12,30 +12,51 @@ def frankeFunction(x,y):
     term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
     return term1 + term2 + term3 + term4
 
+class LinearModel:
 
-def designMatrix(x, p):
-    n = x.shape[0]
-    P = int(((p+2)*(p+1))/2)
-    X = np.zeros((n, P))
-    idx = 0
-    for i in range(p + 1):
-        for j in range(p - i + 1):
-            X[:,idx] = (x[:,0]**i)*(x[:,1]**j)
+    def designMatrix(x, p, intercept = True):
+        n = x.shape[0]
+        P = int(((p+2)*(p+1))/2) - !intercept
+        X = np.zeros((n, P))
+
+        idx = 0
+        for i in range(!interact, p+1):
+            X[:,idx] = x[:,0]**i
             idx += 1
-    return X
+
+        for i in range(p + 1):
+            for j in range(1, p - i + 1):
+                X[:,idx] = (x[:,0]**j)*(x[:,1]**i)
+                idx += 1
+
+        return X, P
+
+    def ols(x, y, poly_deg):
+        self.poly_deg = poly_deg
+        X, self.params = designMatrix(x, poly_deg)
+        self.b = np.linalg.inv(X.T @ X) @ X.T @ y #matrix inversion
+
+    def ridge(x, y, poly_deg, lambda):
+        x = x - np.mean(x, axis = 1)    #centering data
+        X, self.params = designMatrix(x, poly_deg, intercept = False)
 
 
-def mse(y, y_pred):
-    n = y.size
-    mse = 1/n * np.sum((y - y_pred)**2)
-    return mse
 
+    def predict(x):
+        X, = designMatrix(x, self.poly_deg)
+        pred = X @ self.b
+        return pred
 
-def r2(y, y_pred):
-    n = y.size
-    y_ave = np.mean(y)
-    r2 = 1 - np.sum((y - y_pred)**2)/np.sum((y - y_ave)**2)
-    return r2
+    def mse(x,y):
+        n = y.size
+        _mse = 1/n * np.sum((y - self.predict(x))**2)
+        return _mse
+
+    def r2(y, y_pred):
+        n = y.size
+        y_ave = np.mean(y)
+        _r2 = 1 - np.sum((y - self.predict(x))**2)/np.sum((y - y_ave)**2)
+        return _r2
 
 
 def split_data(n, p = 0.25):
