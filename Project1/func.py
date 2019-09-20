@@ -4,6 +4,7 @@ from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 import random as rd
+from scipy import stats
 
 def frankeFunction(x,y):
     term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
@@ -12,64 +13,86 @@ def frankeFunction(x,y):
     term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
     return term1 + term2 + term3 + term4
 
-class LinearModel:
 
-    def designMatrix(self, x, p, intercept = True):
+class LinearModel:
+    def design_matrix(self, x, poly_deg, intercept = True):
         n = x.shape[0]
-        P = int(((p+2)*(p+1))/2) - !intercept
-        X = np.zeros((n, P))
+        params = int(((poly_deg+2)*(poly_deg+1))/2) - (not intercept)
+        X = np.zeros((n, params))
 
         idx = 0
-        for i in range(!interact, p+1):
+        for i in range((not intercept), poly_deg+1):
             X[:,idx] = x[:,0]**i
             idx += 1
 
-        for i in range(p + 1):
-            for j in range(1, p - i + 1):
+        for i in range(1,poly_deg + 1):
+            for j in range(poly_deg - i + 1):
                 X[:,idx] = (x[:,0]**j)*(x[:,1]**i)
                 idx += 1
 
-        return X, P
+        return X, params
+
 
     def ols(self, x, y, poly_deg):
-        self.intercept = True
-        self.centering = False
-        self.standardize = False
+        self.x_mean = 0
+        self.x_std = 1
+        self.y_mean = 0
+        self.N = x.shape[0]
 
         self.poly_deg = poly_deg
-        X, self.params = designMatrix(x, poly_deg)
-        self.b = np.linalg.inv(X.T @ X) @ X.T @ y #matrix inversion
+        X, self.params = self.design_matrix(x, poly_deg)
+        self.inv_cov_matrix = np.linalg.inv(X.T @ X)
+        self.b = self.inv_cov_matrix @ X.T @ y
+
+        self.eff_params = self.params
+        self.b_var = np.diag(self.inv_cov_matrix)*\
+                     self.N/(self.N-self.eff_params)*self.mse(x,y)
+
 
     def ridge(self, x, y, poly_deg, lamb):
-        self.intercept = False
-        self.center_data = True
-        self.standardize_data = True
+        self.x_mean = np.mean(x, axis=0)
+        self.x_std = np.std(x, axis=0)
+        self.y_mean = np.mean(y)
+        self.N = x.shape[0]
 
-        self.x_ave = np.mean(x, axis = 1)
-        self.y_ave = np.mean(y)
-        self.x_std = np.std(x, axis = 1)
+        self.poly_deg = poly_deg
+        x = (x-self.x_mean)/self.x_std
 
-        x = (x - self.x_ave)/self.standardize
-
-        X, self.params = designMatrix(x, poly_deg, self.intercept)
+        self.poly_deg = poly_deg
+        X, self.params = self.design_matrix(x, poly_deg, intercept = False)
+        self.inv_cov_matrix = np.linalg.inv(X.T @ X +\
+                              lamb * np.identity(self.params))
 
         self.params += 1
-        b = np.zeros(self.params)
-        b[0] = self.y_center
-        b[1:] = np.linalg.inv(X.T @ X + lamb np.identity(self.params)) \
-                @ X.T @ (y - self.y_ave)
+        self.eff_params = np.trace(X @ self.inv_cov_matrix @ X.T) + 1
+        self.b = np.zeros(self.params)
+        self.b[0] = self.y_mean
+        self.b[1:] = self.inv_cov_matrix @ X.T @ (y - self.y_mean)
+
+        self.b_var = np.zeros(self.params)
+        self.b_var[0] = 1/self.N
+        self.b_var[1:] = np.diag(self.inv_cov_matrix @ X.T @ X @ self.inv_cov_matrix)
+        self.b_var *= self.N/(self.N - self.eff_params) * self.mse(x,y)
 
 
     def predict(self, x):
-        if self.center_data 
-        X, = designMatrix(x, self.poly_deg, self.intercept)
+        x = (x-self.x_mean)/self.x_std
+        X, P = self.design_matrix(x, self.poly_deg)
         pred = X @ self.b
         return pred
 
-    def mse(self, x,y):
+
+    def confidence_interval(p):
+        t = stats.t(df = N-self.eff_params).ppf(p)
+        self.cinterval = [[self.b[i] - self.b_var[i]*t, b[i] + b_var[i]*t] for \
+                         i in range(P)]
+
+
+    def mse(self, x, y):
         n = y.size
         _mse = 1/n * np.sum((y - self.predict(x))**2)
         return _mse
+
 
     def r2(self, y, y_pred):
         n = y.size
