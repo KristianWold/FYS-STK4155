@@ -33,55 +33,6 @@ class LinearModel:
         return X, params
 
 
-    def ols(self, x, y, poly_deg):
-        self.x_mean = 0
-        self.x_std = 1
-        self.y_mean = 0
-        self.N = x.shape[0]
-
-        self.poly_deg = poly_deg
-        X, self.params = self.design_matrix(x, poly_deg)
-        self.inv_cov_matrix = np.linalg.inv(X.T @ X)
-        self.b = self.inv_cov_matrix @ X.T @ y
-
-        self.eff_params = self.params
-        self.b_var = np.diag(self.inv_cov_matrix)*\
-                     self.N/(self.N-self.eff_params)*self.mse(x,y)
-
-
-    def ridge(self, x, y, poly_deg, lamb):
-        self.x_mean = np.mean(x, axis=0)
-        self.x_std = np.std(x, axis=0)
-        self.y_mean = np.mean(y)
-        self.N = x.shape[0]
-
-        self.poly_deg = poly_deg
-        x = (x-self.x_mean)/self.x_std
-
-        self.poly_deg = poly_deg
-        X, self.params = self.design_matrix(x, poly_deg, intercept = False)
-        self.inv_cov_matrix = np.linalg.inv(X.T @ X +\
-                              lamb * np.identity(self.params))
-
-        self.params += 1
-        self.eff_params = np.trace(X @ self.inv_cov_matrix @ X.T) + 1
-        self.b = np.zeros(self.params)
-        self.b[0] = self.y_mean
-        self.b[1:] = self.inv_cov_matrix @ X.T @ (y - self.y_mean)
-
-        self.b_var = np.zeros(self.params)
-        self.b_var[0] = 1/self.N
-        self.b_var[1:] = np.diag(self.inv_cov_matrix @ X.T @ X @ self.inv_cov_matrix)
-        self.b_var *= self.N/(self.N - self.eff_params) * self.mse(x,y)
-
-
-    def predict(self, x):
-        x = (x-self.x_mean)/self.x_std
-        X, P = self.design_matrix(x, self.poly_deg)
-        pred = X @ self.b
-        return pred
-
-
     def confidence_interval(p):
         t = stats.t(df = N-self.eff_params).ppf(p)
         self.cinterval = [[self.b[i] - self.b_var[i]*t, b[i] + b_var[i]*t] for \
@@ -94,11 +45,59 @@ class LinearModel:
         return _mse
 
 
-    def r2(self, y, y_pred):
+    def r2(self, x, y):
         n = y.size
         y_ave = np.mean(y)
         _r2 = 1 - np.sum((y - self.predict(x))**2)/np.sum((y - y_ave)**2)
         return _r2
+
+class OLS(LinearModel):
+    def fit(self, x, y, poly_deg):
+        self.N = x.shape[0]
+        self.poly_deg = poly_deg
+        X, self.params = self.design_matrix(x, poly_deg)
+
+        self.inv_cov_matrix = np.linalg.inv(X.T @ X)
+        self.b = self.inv_cov_matrix @ X.T @ y
+
+        self.eff_params = self.params
+        self.b_var = np.diag(self.inv_cov_matrix)*\
+                     self.N/(self.N-self.eff_params)*self.mse(x,y)
+
+    def predict(self, x):
+        X, P = self.design_matrix(x, self.poly_deg)
+        pred = X @ self.b
+        return pred
+
+class Ridge(LinearModel):
+    def fit(self, x, y, poly_deg, lamb):
+        self.N = x.shape[0]
+        self.poly_deg = poly_deg
+        X, self.params = self.design_matrix(x, poly_deg, intercept = False)
+        self.X_mean = np.mean(X, axis=0)
+        self.X_std = np.std(X, axis=0)
+
+        X_norm = (X - self.X_mean[np.newaxis,:])/self.X_std[np.newaxis,:]
+        self.inv_cov_matrix = np.linalg.inv(X_norm.T @ X_norm +\
+                              lamb * np.identity(self.params))
+
+        self.params += 1
+        self.eff_params = np.trace(X_norm @ self.inv_cov_matrix @ X_norm.T) + 1
+        self.b = np.zeros(self.params)
+        self.b[0] = np.mean(y)
+        self.b[1:] = self.inv_cov_matrix @ X_norm.T @ (y - self.b[0])
+
+        self.b_var = np.zeros(self.params)
+        self.b_var[0] = 1/self.N
+        self.b_var[1:] = np.diag(self.inv_cov_matrix @ X.T @ X @ self.inv_cov_matrix)
+        self.b_var *= self.N/(self.N - self.eff_params) * self.mse(x,y)
+
+    def predict(self, x):
+        X, P = self.design_matrix(x, self.poly_deg, intercept = False)
+        X_norm = (X - self.X_mean[np.newaxis, :])/self.X_std[np.newaxis, :]
+        pred = X_norm @ self.b[1:] + self.b[0]
+        return pred
+
 
 
 def split_data(n, p = 0.25):

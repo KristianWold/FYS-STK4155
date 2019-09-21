@@ -24,9 +24,9 @@ mse_train = np.zeros(max_poly_deg)
 mse_test = np.zeros(max_poly_deg)
 
 model = LinearModel()
-#model.ridge(x, z, 5, 1)
+model.ridge(x, z, 5, 0)
 #model.ols(x, z, 5)
-
+"""
 for i in range(max_poly_deg):
     for j in range(k):
         train_idx, test_idx = folds(j)
@@ -41,7 +41,7 @@ for i in range(max_poly_deg):
 plt.plot(list(range(max_poly_deg)), mse_train)
 plt.plot(list(range(max_poly_deg)), mse_test)
 plt.show()
-
+"""
 
 """
 X = designMatrix(x, poly_deg)
@@ -90,7 +90,7 @@ x = np.array([[i,j] for i,j in zip(x_lin,y_lin)])
 z_lin = model.predict(x)
 
 z_grid = np.reshape(z_lin,(M,M))
-
+print(z_grid[20,20])
 
 fig = plt.figure()
 ax = fig.gca(projection="3d")
