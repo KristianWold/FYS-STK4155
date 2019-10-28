@@ -81,8 +81,6 @@ class NeuralNetwork():
         self.a[0] = x.T
 
         for i in range(len(self.W)):
-            print(self.W[i].shape)
-            print(self.a[i].shape)
             self.z[i + 1] = self.W[i]@self.a[i]
             self.a[i + 1] = self.acf[i](self.z[i + 1])
 
@@ -93,21 +91,21 @@ class NeuralNetwork():
             self.cost.deriv(self.a[-1], y)
 
         for i in range(len(self.W) - 1, 0, -1):
-            self.grad[i] = self.W[i].T @ self.grad[i + 1] * \
-                self.acf[i].deriv(z[i])
+            self.grad[i - 1] = self.W[i].T @ self.grad[i] * \
+                self.acf[i].deriv(self.z[i])
 
     def train(self, X, y):
 
         delta = []
-        grad, a = self.backward(X[0], y[0])
+        self.backward(X[0], y[0])
 
-        for i in range(len(grad)):
-            delta.append(np.outer(grad[i], a[i]))
+        for i in range(len(self.grad)):
+            delta.append(np.outer(self.grad[i], self.a[i]))
 
         for i in range(1, len(y)):
-            grad, a = self.backward(X[i], y[i])
-            for j in range(len(grad)):
-                delta[j] += np.outer(grad[j], a[j])
+            self.backward(X[i], y[i])
+            for j in range(len(self.grad)):
+                delta[j] += np.outer(self.grad[j], self.a[j])
 
         for i in range(len(delta)):
             self.W[i] -= 0.01 * delta[i]
@@ -127,8 +125,14 @@ y = np.round((X[:, 0] + X[:, 1]) / 2)
 nn = NeuralNetwork((2, 4, 1), [tanh, sig], crossEntropy)
 
 nn.forward(X[0])
-print(nn.z)
+print(nn.a[-1])
 
+for i in range(3000):
+    nn.train(X[:10], y[:10])
+
+nn.forward(X[:10])
+print(nn.a[-1])
+print(y[:10])
 # grad, a = nn.backward(X[0], y[0])
 
 # print(grad)
