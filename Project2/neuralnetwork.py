@@ -1,4 +1,5 @@
 import numpy as np
+import numba as nb
 
 
 class Sigmoid():
@@ -57,6 +58,15 @@ out = dense2(out)
 """
 
 
+def forward(self, x):
+    self.z[0] = x.T
+    self.a[0] = x.T
+
+    for i in range(len(self.W)):
+        self.z[i + 1] = self.W[i]@self.a[i] + self.b[i]
+        self.a[i + 1] = self.acf[i](self.z[i + 1])
+
+
 class NeuralNetwork():
 
     def __init__(self, dim, acf, cost):
@@ -69,6 +79,7 @@ class NeuralNetwork():
         self.z = np.empty(len(dim), dtype=np.ndarray)
         self.a = np.empty(len(dim), dtype=np.ndarray)
         self.grad = np.empty(len(dim) - 1, dtype=np.ndarray)
+        self.delta = np.empty(len(dim) - 1, dtype=np.ndarray)
 
         for i in range(len(dim) - 1):
             m = dim[i + 1]
@@ -81,7 +92,7 @@ class NeuralNetwork():
         self.a[0] = x.T
 
         for i in range(len(self.W)):
-            self.z[i + 1] = self.W[i]@self.a[i]
+            self.z[i + 1] = self.W[i]@self.a[i] + self.b[i]
             self.a[i + 1] = self.acf[i](self.z[i + 1])
 
     def backward(self, x, y):
@@ -96,19 +107,18 @@ class NeuralNetwork():
 
     def train(self, X, y):
 
-        delta = []
         self.backward(X[0], y[0])
 
         for i in range(len(self.grad)):
-            delta.append(np.outer(self.grad[i], self.a[i]))
+            self.delta[i] = np.outer(self.grad[i], self.a[i])
 
         for i in range(1, len(y)):
             self.backward(X[i], y[i])
             for j in range(len(self.grad)):
-                delta[j] += np.outer(self.grad[j], self.a[j])
+                self.delta[j] += np.outer(self.grad[j], self.a[j])
 
-        for i in range(len(delta)):
-            self.W[i] -= 0.01 * delta[i]
+        self.W -= 0.01 * self.delta
+        self.b -= 0.01 * self.grad
 
 
 tanh = Tanh()
@@ -118,26 +128,21 @@ crossEntropy = CrossEntropy()
 
 np.random.seed(42)
 
-X = np.random.uniform(0, 1, (100, 2))
+X = np.random.uniform(0, 1, (100, 40 * 40))
 
 y = np.round((X[:, 0] + X[:, 1]) / 2)
 
-nn = NeuralNetwork((2, 4, 1), [tanh, sig], crossEntropy)
+nn = NeuralNetwork((40 * 40, 20 * 20, 10 * 20, 1),
+                   [tanh, tanh, sig], crossEntropy)
 
-nn.forward(X[0])
-print(nn.a[-1])
-
-for i in range(3000):
+for i in range(10):
     nn.train(X[:10], y[:10])
 
-nn.forward(X[:10])
-print(nn.a[-1])
-print(y[:10])
-# grad, a = nn.backward(X[0], y[0])
+for i in range(10):
+    nn.forward(X[i])
+    print(nn.a[-1])
+    print(y[i])
 
-# print(grad)
-# a = np.array([np.ones((3, 3)), np.ones((2, 2))])
-# print(a+a)
 """
 y_train = np.round(nn.forward(X[:50])[-1][-1])
 y_test = np.round(nn.forward(X[50:])[-1][-1])
