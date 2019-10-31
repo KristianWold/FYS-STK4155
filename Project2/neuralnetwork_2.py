@@ -30,7 +30,7 @@ class Relu():
 
 class SoftMax():
     def __call__(self, x):
-        return np.exp(x) / np.sum(np.exp(x), axis=0)
+        return np.exp(x) / np.sum(np.exp(x))
 
     def deriv(self, x):
         return self(x) * (1 - self(x))
@@ -49,7 +49,7 @@ class SquareLoss():
         return 0.5 * sum((y_pred - y)**2)
 
     def deriv(self, y_pred, y):
-        return (y_pred - y)
+        return (y_pred - y.T)
 
 
 class CrossEntropy():
@@ -99,15 +99,18 @@ class NeuralNetwork():
                 self.acf[i].deriv(self.z[i])
 
     def train(self, X, y, mu):
-
         self.backward(X, y)
+        #self.backward(X[0], y[0])
 
         for i in range(len(self.grad)):
-            self.delta[i] = self.grad[i]@self.a[i].T
+            self.delta[i] = np.outer(self.grad[i], self.a[i])
+
+        for i in range(1, len(y)):
+            for j in range(len(self.grad)):
+                self.delta[j] += np.outer(self.grad[j], self.a[j])
 
         self.W -= mu * self.delta
-        for i in range(len(self.grad)):
-            self.b[i] -= mu * np.sum(self.grad[i], axis=1)
+        self.b -= mu * self.grad
 
 
 tanh = Tanh()
@@ -119,7 +122,7 @@ squareLoss = SquareLoss()
 data = load_digits()
 enc = OneHotEncoder(categories='auto')
 
-N = 100
+N = 10
 
 y = enc.fit_transform(np.array(data.target[:2 * N]).reshape(-1, 1)).toarray()
 x = np.array(data.data[:2 * N])
@@ -130,17 +133,15 @@ nn = NeuralNetwork((64, 30, 10), [tanh, softMax], squareLoss)
 nn.forward(x)
 
 
-for i in range(6000):
-    nn.train(x[:N], y[:N].T, 0.002)
+for i in range(3000):
+    nn.train(x, y, 0.01)
     if i % (3000 / 100) == 0:
         print(i * (100 / 3000))
 
 success = 0
 
-nn.forward(x)
+for i in range(N):
+    nn.forward(x[i + N])
+    success += np.array_equal(np.round((nn.a)[-1]), y[i + N])
 
-
-for i in range(N, 2 * N):
-    success += np.array_equal(np.round((nn.a)[-1][:, i]), y[i])
-
-print(success)
+print(success / N)
