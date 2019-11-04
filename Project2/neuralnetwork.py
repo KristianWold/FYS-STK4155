@@ -136,88 +136,49 @@ class NeuralNetwork():
         """
 
 
-tanh = Tanh()
-sig = Sigmoid()
-softMax = SoftMax()
-relu = Relu()
+if __name__ == "__main__":
+    tanh = Tanh()
+    sig = Sigmoid()
+    softMax = SoftMax()
+    relu = Relu()
 
-crossEntropy = CrossEntropy()
-squareLoss = SquareLoss()
-mlogloss = MlogLoss()
+    crossEntropy = CrossEntropy()
+    squareLoss = SquareLoss()
+    mlogloss = MlogLoss()
 
-data = load_digits()
+    data = load_digits()
 
-X = data.data
-y = data.target
+    X = data.data
+    y = data.target
 
+    np.random.seed(42)
+    idx = np.where(np.logical_or(y == 0, y == 1))[0]
+    np.random.shuffle(idx)
+    idx_train = idx[:300]
+    idx_test = idx[300:]
 
-np.random.seed(42)
-idx = np.where(np.logical_or(y == 0, y == 1))[0]
-np.random.shuffle(idx)
-idx_train = idx[:300]
-idx_test = idx[300:]
+    X_train = X[idx_train]
+    y_train = y[idx_train]
 
-X_train = X[idx_train]
-y_train = y[idx_train]
+    X_test = X[idx_test]
+    y_test = y[idx_test]
 
-X_test = X[idx_test]
-y_test = y[idx_test]
+    nn = NeuralNetwork((64, 32, 1), [tanh, sig], crossEntropy)
 
+    epoch = 1000
 
-nn = NeuralNetwork((64, 32, 1), [tanh, sig], crossEntropy)
+    for i in range(epoch):
+        nn.train(X_train, y_train, 0.00001, 64)
+        if i % (epoch / 100) == 0:
+            print(i * (100 / epoch))
 
-epoch = 1000
+    success = 0
 
-for i in range(epoch):
-    nn.train(X_train, y_train, 0.00001, 64)
-    if i % (epoch / 100) == 0:
-        print(i * (100 / epoch))
+    nn.forward(X_test)
 
-success = 0
+    # print(y_test[:10])
+    print((nn.a)[-1].shape)
+    print(y_test.shape)
 
-nn.forward(X_test)
-
-# print(y_test[:10])
-print((nn.a)[-1].shape)
-print(y_test.shape)
-
-for i in range(len(y_test)):
-    success += (np.round((nn.a)[-1][:, i]) == y_test[i])
-
-print(success)
-
-"""
-
-enc = OneHotEncoder(categories='auto')
-
-N = 1500
-N_test = 100
-
-y = enc.fit_transform(np.array(data.target).reshape(-1, 1)).toarray()
-x = np.array(data.data)
-
-np.random.seed(42)
-nn = NeuralNetwork((64, 48, 10), [tanh, softMax], squareLoss)
-
-y_train = y[:1300]
-x_train = x[:1300] / np.max(x)
-
-y_test = y[1300:]
-x_test = x[1300:] / np.max(x)
-
-epoch = 1000
-
-for i in range(epoch):
-    nn.train(x_train, y_train, 0.0001, 0, 64)
-    if i % (epoch / 100) == 0:
-        print(i * (100 / epoch))
-
-success = 0
-
-nn.forward(x_train)
-
-for i in range(100):
-    success += np.array_equal(np.round((nn.a)[-1][:, i]), y_train[i])
-
-print(success)
-"""
+    for i in range(len(y_test)):
+        success += (np.round((nn.a)[-1][:, i]) == y_test[i])

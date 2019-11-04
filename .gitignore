@@ -10,6 +10,8 @@
 # Prerequisites
 *.d
 
+*.npy
+
 # Object files
 *.o
 *.ko
