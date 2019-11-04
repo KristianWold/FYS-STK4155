@@ -99,13 +99,14 @@ class NeuralNetwork():
                 self.acf[i].deriv(self.z[i])
 
     def train(self, X, y, mu):
-        self.backward(X, y)
-        #self.backward(X[0], y[0])
+        #self.backward(X, y)
+        self.backward(X[0], y[0])
 
         for i in range(len(self.grad)):
             self.delta[i] = np.outer(self.grad[i], self.a[i])
 
         for i in range(1, len(y)):
+            self.backward(X[i], y[i])
             for j in range(len(self.grad)):
                 self.delta[j] += np.outer(self.grad[j], self.a[j])
 
