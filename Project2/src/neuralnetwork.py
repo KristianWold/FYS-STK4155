@@ -29,7 +29,7 @@ class Relu():
         return np.maximum(x, 0)
 
     def deriv(self, x):
-        return 0 < x
+        return (0 < x).astype("int")
 
 
 class Pass():
