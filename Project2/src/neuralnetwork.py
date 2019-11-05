@@ -26,7 +26,7 @@ class Tanh():
 
 class Relu():
     def __call__(self, x):
-        return np.max(x, 0)
+        return np.maximum(x, 0)
 
     def deriv(self, x):
         return 0 < x
@@ -93,7 +93,7 @@ class NeuralNetwork():
             self.delta[i - 1] = self.delta[i] @ self.W[i] * \
                 self.acf[i - 1].deriv(self.z[i])
 
-    def train(self, X, y, mu, batch_size, epochs):
+    def train(self, X, y, mu, lamb, batch_size, epochs):
         if len(y.shape) == 1:
             y = y[:, np.newaxis]
 
@@ -113,7 +113,7 @@ class NeuralNetwork():
                 for j in range(len(self.grad)):
                     self.grad[j] = self.delta[j].T @ self.a[j]
 
-                self.W -= mu * self.grad
+                self.W -= mu * self.grad + lamb * self.W
 
                 for j in range(len(self.grad)):
                     self.b[j] -= mu * np.sum(self.delta[j], axis=0)
